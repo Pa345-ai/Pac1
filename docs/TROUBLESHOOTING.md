@@ -1,14 +1,18 @@
-# Troubleshooting
+# Customer Troubleshooting Guide
 
-### 1. "Access Denied" to Logs or Secrets
-- **Reason:** Your `project_name` in `variables.tf` might not match the ARN in `iam.tf`.
-- **Fix:** Ensure `project_name` and `environment` variables are consistent. The IAM policy is strictly scoped to these names.
+### 1. "Access Denied" when starting the App
+- **The Problem:** Your ECS containers can't read secrets or write logs.
+- **The Fix:** Ensure the `project_name` in your `terraform.tfvars` matches the name you used during `./setup.sh`. The security roles are locked to this specific name.
 
-### 2. "KMS Key Not Found"
-- **Reason:** You may have deleted and recreated the infrastructure, but the old KMS key is still in a "Pending Deletion" state.
-- **Fix:** Use a new `project_name` or wait for the deletion window to clear.
+### 2. "502 Bad Gateway" (ALB Error)
+- **The Problem:** The Load Balancer can't find your app.
+- **The Fix:** Ensure your Dockerfile exposes the same port as `container_port` in your variables (default is 3000). Also, ensure your app has a health check route at `/` that returns 200 OK.
 
-### 3. "tfsec Failure" in GitHub Actions
-- **Reason:** You added a resource (like an S3 bucket or a Security Group rule) that violates security best practices.
-- **Fix:** Read the `tfsec` output in the GitHub Action logs. It will tell you exactly which line is "insecure."
+### 3. "KMS Key Pending Deletion"
+- **The Problem:** You ran `terraform destroy` and immediately tried to `apply` again.
+- **The Fix:** AWS keeps KMS keys for 7 days before deleting. If you are testing, change your `project_name` to create a fresh set of keys.
+
+### 4. "GitHub Action Failed at Security Scan"
+- **The Problem:** You modified the Terraform code and introduced a security risk.
+- **The Fix:** Check the logs of the "Security Audit" step. It will pinpoint the line. This kit is designed to block insecure deployments.
 - 
