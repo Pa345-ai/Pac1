@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: aws-actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -32,7 +32,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # Build and push the Docker image to ECR with a unique SHA tag and 'latest' tag
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -53,14 +52,12 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      # Synchronize infrastructure with the newly pushed image
       - name: Terraform Plan
         run: terraform plan -var="container_image=${{ steps.build-image.outputs.image }}" -out=tfplan
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
-      # Trigger a rolling update to the ECS service to pick up the new container image
       - name: Force ECS Service Update
         run: |
           aws ecs update-service \
@@ -75,4 +72,4 @@ jobs:
             --cluster ${{ env.ECS_CLUSTER }} \
             --services ${{ env.ECS_SERVICE }} \
             --region ${{ env.AWS_REGION }}
-
+            
