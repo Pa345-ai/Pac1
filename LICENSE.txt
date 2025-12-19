@@ -1,0 +1,18 @@
+AWS TERRAFORM STARTER KIT - SINGLE COMMERCIAL USE LICENSE
+
+Copyright (c) 2025 [Your Name/Company]
+
+1. GRANT OF LICENSE:
+The Purchase of this "Starter Kit" grants the user a non-exclusive, non-transferable license to use the code for the deployment of their own commercial projects.
+
+2. RESTRICTIONS:
+You may NOT:
+- Resell, redistribute, or sub-license the code.
+- Share the code in public repositories (GitHub, GitLab, etc).
+- Use the code to build a competing "Starter Kit" product.
+
+3. NO WARRANTY (THE RUTHLESS PART):
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+4. NO SUPPORT & NO UPDATES:
+This is a one-time digital purchase. The seller is under no obligation to provide technical support, bug fixes, or updates to accommodate future AWS or Terraform changes.
