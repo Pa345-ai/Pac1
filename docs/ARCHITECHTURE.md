@@ -1,14 +1,11 @@
-# Infrastructure Architecture: Secure Lean Stack
+# Architecture Overview
 
-## Core Security Decisions
-- **Encryption at Rest:** We use **AWS KMS (Key Management Service)** to encrypt application logs and sensitive secrets. This ensures even if a disk was compromised, your data remains unreadable.
-- **Scoped IAM Roles:** Instead of using `Resource: *`, our IAM policies are restricted to specific resource ARNs. This prevents "Lateral Movement" if a container is ever compromised.
-- **Automated Security Gates:** We use `tfsec` in the deployment pipeline to ensure no developer accidentally opens a security hole.
+## The Security Layers
+1. **The Vault (Secrets Manager + KMS):** Your API keys (Stripe, OpenAI) are encrypted at rest with a dedicated KMS key. 
+2. **The Fortress (VPC):** Traffic enters through an ALB, but the ECS containers live in a Private Subnet with no direct internet access.
+3. **The Audit Trail (CloudWatch + KMS):** Every log line emitted by your app is encrypted before being stored.
 
 
 
-## Traffic Flow
-1. User -> ALB (Public Subnet)
-2. ALB -> ECS Service (Private Subnet)
-3. ECS Service -> KMS (Decrypt Secrets)
-4. ECS Service -> CloudWatch (Encrypted Logs)
+## Connectivity
+Your app uses a **NAT Gateway** for outbound requests (calling Stripe/OpenAI). This ensures your app has a stable outbound IP while staying hidden from inbound attacks.
