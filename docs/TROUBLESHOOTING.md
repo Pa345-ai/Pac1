@@ -1,18 +1,14 @@
-# Troubleshooting & Common Issues
+# Troubleshooting
 
-### 1. "Task stopped" or "Task failed to start"
-- **Check Logs:** Go to CloudWatch -> Log Groups -> /ecs/myapp-production.
-- **Common Cause:** Missing environment variables or incorrect Secrets Manager ARNs.
-- **Common Cause:** The Docker image in ECR does not match the architecture (Ensure you build for `linux/amd64`).
+### 1. "Access Denied" to Logs or Secrets
+- **Reason:** Your `project_name` in `variables.tf` might not match the ARN in `iam.tf`.
+- **Fix:** Ensure `project_name` and `environment` variables are consistent. The IAM policy is strictly scoped to these names.
 
-### 2. "Terraform Backend Error" (S3/DynamoDB)
-- **Fix:** Ensure you ran `bin/setup.sh` first.
-- **Fix:** Ensure your AWS CLI is logged in (`aws sts get-caller-identity`).
+### 2. "KMS Key Not Found"
+- **Reason:** You may have deleted and recreated the infrastructure, but the old KMS key is still in a "Pending Deletion" state.
+- **Fix:** Use a new `project_name` or wait for the deletion window to clear.
 
-### 3. "Health Check Failed" (502 Bad Gateway)
-- **Fix:** Ensure your app is actually listening on the `container_port` defined in `terraform.tfvars`. 
-- **Fix:** Ensure your app has a `/` (root) route that returns a 200 OK status.
-
-### 4. "Access Denied" on Secrets
-- **Fix:** If you added new secrets manually, ensure the IAM Execution Role has permissions to the specific Secret ARN (Updated in `iam.tf`).
+### 3. "tfsec Failure" in GitHub Actions
+- **Reason:** You added a resource (like an S3 bucket or a Security Group rule) that violates security best practices.
+- **Fix:** Read the `tfsec` output in the GitHub Action logs. It will tell you exactly which line is "insecure."
 - 
