@@ -1,50 +1,46 @@
-name: Deploy to AWS
+name: Production Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 env:
   AWS_REGION: us-east-1
+  # These link directly to the outputs in your 'output tf' file
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
   ECS_SERVICE: ${{ secrets.ECS_SERVICE_NAME }}
   ECS_CLUSTER: ${{ secrets.ECS_CLUSTER_NAME }}
-  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
 
 jobs:
   deploy:
-    name: Build and Deploy
+    name: Build, Scan & Deploy
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Pull the code into the runner
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. SECURITY GATE: Scan Terraform for vulnerabilities
-      # This adds massive "Premium" value to your starter kit.
+      # 1. SECURITY AUDIT (Premium Feature)
+      # This ensures the customer doesn't accidentally weaken your new ChatGPT files
       - name: Terraform Security Scan (tfsec)
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
-          working_directory: terraform
-          soft_fail: false # Build will fail if high-risk security flaws are found
+          soft_fail: false 
 
-      # 3. Authenticate with AWS
-      - name: Configure AWS credentials
+      # 2. AWS AUTHENTICATION
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 4. Login to ECR
+      # 3. DOCKER BUILD & PUSH
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 5. Build and Push Container
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build, Tag, and Push
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -52,11 +48,9 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      # 6. Infrastructure Sync
+      # 4. TERRAFORM DEPLOYMENT
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -65,26 +59,19 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Plan
-        run: terraform plan -var="container_image=${{ steps.build-image.outputs.image }}" -out=tfplan
-
+      # Passing the project_name is CRITICAL for your new iam.tf to work
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+        run: |
+          terraform apply -auto-approve \
+            -var="container_image=${{ steps.build-image.outputs.image }}" \
+            -var="project_name=${{ secrets.PROJECT_NAME }}"
 
-      # 7. Force ECS Refresh
-      - name: Force ECS Service Update
+      # 5. ECS REFRESH
+      - name: Force Deployment
         run: |
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE }} \
             --force-new-deployment \
-            --region ${{ env.AWS_REGION }}
-
-      # 8. Final Stability Check
-      - name: Wait for service stability
-        run: |
-          aws ecs wait services-stable \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --services ${{ env.ECS_SERVICE }} \
             --region ${{ env.AWS_REGION }}
             
