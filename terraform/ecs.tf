@@ -1,22 +1,141 @@
+############################################
+# DATA
+############################################
+
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "ecs_task_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+############################################
+# KMS – CLOUDWATCH LOGS
+############################################
+
+data "aws_iam_policy_document" "cloudwatch_kms_policy" {
+  statement {
+    sid    = "AllowRootAccount"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "AllowCloudWatchLogs"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_kms_key" "cloudwatch" {
+  description             = "KMS key for ECS CloudWatch logs"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  policy                  = data.aws_iam_policy_document.cloudwatch_kms_policy.json
+}
+
+############################################
+# CLOUDWATCH LOG GROUP
+############################################
+
 resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/ecs/${var.project_name}-${var.environment}"
   retention_in_days = 7
-  # tfsec:ignore:aws-cloudwatch-log-group-customer-key
+  kms_key_id        = aws_kms_key.cloudwatch.arn
+
   tags = {
     Name = "${var.project_name}-${var.environment}-ecs-logs"
   }
 }
 
+############################################
+# IAM – EXECUTION ROLE
+############################################
+
+resource "aws_iam_role" "ecs_task_execution" {
+  name               = "${var.project_name}-${var.environment}-ecs-task-execution-role"
+  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+############################################
+# IAM – TASK ROLE
+############################################
+
+resource "aws_iam_role" "ecs_task" {
+  name               = "${var.project_name}-${var.environment}-ecs-task-role"
+  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role.json
+}
+
+data "aws_iam_policy_document" "ecs_task_logs" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = [
+      "${aws_cloudwatch_log_group.ecs.arn}:log-stream:*"
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "ecs_task_logs" {
+  name   = "${var.project_name}-${var.environment}-task-logs-policy"
+  role   = aws_iam_role.ecs_task.id
+  policy = data.aws_iam_policy_document.ecs_task_logs.json
+}
+
+############################################
+# ECS CLUSTER
+############################################
+
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-${var.environment}-cluster"
+
   setting {
     name  = "containerInsights"
     value = "enabled"
   }
+
   tags = {
     Name = "${var.project_name}-${var.environment}-cluster"
   }
 }
+
+############################################
+# ECS TASK DEFINITION
+############################################
 
 resource "aws_ecs_task_definition" "main" {
   family                   = "${var.project_name}-${var.environment}-task"
@@ -24,21 +143,25 @@ resource "aws_ecs_task_definition" "main" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.cpu
   memory                   = var.memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  execution_role_arn = aws_iam_role.ecs_task_execution.arn
+  task_role_arn      = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
       name      = "${var.project_name}-container"
       image     = var.container_image
       essential = true
+
       portMappings = [
         {
           containerPort = var.container_port
           protocol      = "tcp"
         }
       ]
+
       environment = var.app_environment_variables
+
       secrets = [
         {
           name      = "STRIPE_SECRET_KEY"
@@ -53,20 +176,28 @@ resource "aws_ecs_task_definition" "main" {
           valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:DATABASE_URL::"
         }
       ]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "ecs"
         }
       }
     }
   ])
+
+  depends_on = [aws_cloudwatch_log_group.ecs]
+
   tags = {
     Name = "${var.project_name}-${var.environment}-task"
   }
 }
+
+############################################
+# ECS SERVICE
+############################################
 
 resource "aws_ecs_service" "main" {
   name            = "${var.project_name}-${var.environment}-service"
@@ -74,17 +205,28 @@ resource "aws_ecs_service" "main" {
   task_definition = aws_ecs_task_definition.main.arn
   desired_count   = var.desired_count
   launch_type     = "FARGATE"
+
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 200
+
   network_configuration {
     subnets          = aws_subnet.private[*].id
     security_groups  = [aws_security_group.ecs_tasks.id]
     assign_public_ip = false
   }
+
   load_balancer {
     target_group_arn = aws_lb_target_group.main.arn
     container_name   = "${var.project_name}-container"
     container_port   = var.container_port
   }
+
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
+
   depends_on = [aws_lb_listener.http]
+
   tags = {
     Name = "${var.project_name}-${var.environment}-service"
   }
