@@ -1,6 +1,6 @@
 AWS TERRAFORM STARTER KIT - SINGLE COMMERCIAL USE LICENSE
 
-Copyright (c) 2025 [Your Name/Company]
+Copyright (c) 2025 [RUWANPURAGE PAWAN RANASINGHE/ARCHON]
 
 1. GRANT OF LICENSE:
 The Purchase of this "Starter Kit" grants the user a non-exclusive, non-transferable license to use the code for the deployment of their own commercial projects.
