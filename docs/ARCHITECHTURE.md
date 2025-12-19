@@ -12,4 +12,3 @@
 2. ALB -> ECS Service (Private Subnet)
 3. ECS Service -> KMS (Decrypt Secrets)
 4. ECS Service -> CloudWatch (Encrypted Logs)
-5. 
