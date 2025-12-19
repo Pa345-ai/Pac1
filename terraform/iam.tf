@@ -47,7 +47,8 @@ resource "aws_iam_role_policy" "ecs_task_logs" {
       {
         Action = ["logs:CreateLogStream", "logs:PutLogEvents"]
         Effect = "Allow"
-        Resource = ["${aws_cloudwatch_log_group.ecs.arn}:*"] # Fixes tfsec Result #7
+        # FIXED: Restricted from wildcard to specific Log Group
+        Resource = ["${aws_cloudwatch_log_group.ecs.arn}:*"]
       }
     ]
   })
