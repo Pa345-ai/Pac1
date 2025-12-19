@@ -1,15 +1,17 @@
 #!/bin/bash
-set -e # Exit immediately if a command fails
+set -e
 
+# CUSTOMIZE THESE
 PROJECT_NAME="myapp" 
 REGION="us-east-1"
 BUCKET_NAME="${PROJECT_NAME}-terraform-state-$(date +%s)"
 
-echo "🚀 Starting 10-Minute SaaS Launch..."
+echo "🚀 Starting 10-Minute SaaS Launch (High-Security Edition)..."
 
 # 1. Create S3 Bucket for Remote State
 aws s3api create-bucket --bucket $BUCKET_NAME --region $REGION
 aws s3api put-bucket-versioning --bucket $BUCKET_NAME --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket $BUCKET_NAME --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
 echo "✅ S3 Bucket Created: $BUCKET_NAME"
 
 # 2. Create DynamoDB Table for Locking
@@ -24,16 +26,16 @@ echo "✅ DynamoDB Table Created."
 aws ecr create-repository --repository-name "${PROJECT_NAME}-production" --region $REGION
 echo "✅ ECR Repository Created."
 
-# 4. RUTHLESS AUTOMATION: Update backend.tf automatically
-# This replaces the placeholder in backend.tf with the actual bucket name
-if [ -f "terraform/backend.tf" ]; then
-    # Use sed to swap the placeholder for the real bucket name
-    sed -i '' "s/YOUR-PROJECT-terraform-state/$BUCKET_NAME/g" terraform/backend.tf 2>/dev/null || \
-    sed -i "s/YOUR-PROJECT-terraform-state/$BUCKET_NAME/g" terraform/backend.tf
-    echo "✅ backend.tf updated with bucket name."
+# 4. Update backend.tf automatically
+if [ -f "Backend.tf" ]; then
+    sed -i '' "s/YOUR-PROJECT-terraform-state/$BUCKET_NAME/g" Backend.tf 2>/dev/null || \
+    sed -i "s/YOUR-PROJECT-terraform-state/$BUCKET_NAME/g" Backend.tf
+    echo "✅ Backend.tf updated with bucket name."
 fi
 
-echo "----------------------------------------------------"
-echo "DONE! Your AWS foundation is ready."
-echo "Next Step: cd terraform && terraform init"
-echo "----------------------------------------------------"
+echo "-------------------------------------------------------"
+echo "🎉 SETUP COMPLETE!"
+echo "1. Run: terraform init"
+echo "2. Run: terraform apply -var=\"project_name=$PROJECT_NAME\""
+echo "-------------------------------------------------------"
+
