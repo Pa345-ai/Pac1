@@ -18,9 +18,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Pull the code into the runner
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. SECURITY GATE: Scan Terraform for vulnerabilities
+      # This adds massive "Premium" value to your starter kit.
+      - name: Terraform Security Scan (tfsec)
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: terraform
+          soft_fail: false # Build will fail if high-risk security flaws are found
+
+      # 3. Authenticate with AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -28,10 +38,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # 4. Login to ECR
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # 5. Build and Push Container
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -44,6 +56,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+      # 6. Infrastructure Sync
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -58,6 +71,7 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
+      # 7. Force ECS Refresh
       - name: Force ECS Service Update
         run: |
           aws ecs update-service \
@@ -66,6 +80,7 @@ jobs:
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
 
+      # 8. Final Stability Check
       - name: Wait for service stability
         run: |
           aws ecs wait services-stable \
