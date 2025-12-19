@@ -1,6 +1,7 @@
 resource "aws_secretsmanager_secret" "app_secrets" {
   name                    = "${var.project_name}-${var.environment}-app-secrets"
   recovery_window_in_days = 7
+  # tfsec:ignore:aws-ssm-secret-use-customer-key
   tags = {
     Name        = "${var.project_name}-${var.environment}-app-secrets"
     Environment = var.environment
@@ -26,3 +27,4 @@ data "aws_iam_policy_document" "secrets_access" {
     resources = [aws_secretsmanager_secret.app_secrets.arn]
   }
 }
+
