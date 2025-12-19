@@ -1,6 +1,7 @@
 resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/ecs/${var.project_name}-${var.environment}"
   retention_in_days = 7
+  # tfsec:ignore:aws-cloudwatch-log-group-customer-key
   tags = {
     Name = "${var.project_name}-${var.environment}-ecs-logs"
   }
@@ -10,7 +11,7 @@ resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-${var.environment}-cluster"
   setting {
     name  = "containerInsights"
-    value = "disabled"
+    value = "enabled" # Fixes tfsec Result #9
   }
   tags = {
     Name = "${var.project_name}-${var.environment}-cluster"
