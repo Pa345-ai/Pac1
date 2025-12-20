@@ -11,13 +11,11 @@ Built for solo founders and small teams who need production-ready AWS infrastruc
 You're a founder with a working prototype. You need to get it live. Fast.
 
 But first you need:
-- A VPC with proper subnets
-- Load balancers and health checks
-- Container orchestration
-- Security groups that don't expose everything
-- IAM roles (without giving away the keys to the kingdom)
-- Logging and monitoring
-- A deployment pipeline
+- **Enterprise-Grade Encryption:** Application logs and secrets are encrypted at rest with AWS KMS Customer Managed Keys.
+- **Zero-Trust Networking:** Your application is isolated in Private Subnets, accessible only through a hardened Load Balancer.
+- **Secure Secret Management:** Production keys are managed via AWS Secrets Manager with automatic decryption for your ECS tasks.
+- **Least-Privilege IAM:** Security roles are strictly scoped to your project name to ensure "Zero-Trust" access control.
+
 
 **This takes 2-3 weeks.** Minimum.
 
