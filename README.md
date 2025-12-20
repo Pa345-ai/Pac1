@@ -588,7 +588,8 @@ Every hour you spend configuring subnets is an hour you're not:
 
 This starter kit gives you those hours back.
 
-It's not perfect. It's not enterprise-grade. It's not designed for banks.
+It's built for speed, but hardened with the enterprise security patterns used by top-tier tech companies. It's the perfect balance of "Fast to Market" and "Secure by Default".
+
 
 But it's **good enough** to launch. And launching is what matters.
 
