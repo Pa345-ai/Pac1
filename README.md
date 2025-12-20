@@ -675,135 +675,85 @@ If you need enterprise support, hire a DevOps consultant.
 - Banks, healthcare, or government projects
 - Teams needing SOC2, HIPAA, or PCI certification
 - Applications requiring 99.99%+ uptime SLAs
-- Multi-tenant SaaS with complex isolat
-Projects with >$50k/month infrastructure budgets
+- Multi-tenant SaaS with complex isolation requirements
+- Projects with >$50k/month infrastructure budgets
+- Teams that need 24/7 support
 
-Teams that need 24/7 support
+---
 
-License
+## License
 
 All rights reserved. Licensed for single commercial use per purchase.
 
-
-
 You may modify this code for your own projects. You may NOT resell, redistribute, or share this code with others.
 
+See `LICENSE.txt` for full details.
 
+---
 
-See LICENSE.txt for full details.
+## Final Thoughts
 
-
-
-Final Thoughts
-
-DevOps is a time sink for founders.
-
-
+DevOps is a **time sink** for founders.
 
 Every hour you spend configuring subnets is an hour you're not:
-
-
-
-Talking to customers
-
-Shipping features
-
-Iterating on your product
-
-Making revenue
+- Talking to customers
+- Shipping features
+- Iterating on your product
+- Making revenue
 
 This starter kit gives you those hours back.
 
-
-
 It's not perfect. It's not enterprise-grade. It won't scale to 100 million users.
 
-
-
-But it's good enough to launch. And launching is what matters.
-
-
+But it's **good enough** to launch. And launching is what matters.
 
 The best infrastructure is the infrastructure that gets out of your way so you can build your product.
 
+**Ready to ship?** 🚀
 
+---
 
-Ready to ship? 🚀
+## Quick Start Summary
 
-
-
-Quick Start Summary
-
-bash
-
+```bash
 # 1. Setup AWS resources
-
 ./bin/setup.sh
 
-
-
 # 2. Initialize Terraform
-
 cd terraform
-
 terraform init
 
-
-
 # 3. Deploy infrastructure
-
 terraform apply -var="project_name=myapp"
 
-
-
 # 4. Build and push Docker image
-
 docker build -t myapp .
-
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com
-
 docker tag myapp:latest $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/myapp-production:latest
-
 docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com/myapp-production:latest
 
-
-
 # 5. Force ECS deployment
-
 aws ecs update-service --cluster myapp-production-cluster --service myapp-production-service --force-new-deployment
 
-
-
 # 6. Get your URL
-
 terraform output alb_url
+```
 
-Three critical post-deployment tasks:
+**Three critical post-deployment tasks:**
 
-
-
-Set up billing alerts in AWS Console (set at $100/month)
-
-Update the placeholder secrets in Secrets Manager:
-
-bash
-
+1. **Set up billing alerts** in AWS Console (set at $100/month)
+2. **Update the placeholder secrets** in Secrets Manager:
+   ```bash
    aws secretsmanager put-secret-value --secret-id myapp-production-app-secrets --secret-string '{"STRIPE_SECRET_KEY":"sk_live_...","OPENAI_API_KEY":"sk-...","JWT_SECRET":"...","DATABASE_URL":"..."}'
+   ```
+3. **Add your domain and HTTPS certificate** before going live with real users
 
-Add your domain and HTTPS certificate before going live with real users
-
-Set up GitHub Secrets for CI/CD:
-
-AWS_ACCESS_KEY_ID
-
-AWS_SECRET_ACCESS_KEY
-
-PROJECT_NAME (must match terraform project_name)
-
-ECR_REPOSITORY_NAME
-
-ECS_SERVICE_NAME
-
-ECS_CLUSTER_NAME
+4. **Set up GitHub Secrets for CI/CD:**
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `PROJECT_NAME` (must match terraform project_name)
+   - `ECR_REPOSITORY_NAME`
+   - `ECS_SERVICE_NAME`
+   - `ECS_CLUSTER_NAME`
 
 Then get back to building your product. 🚀
