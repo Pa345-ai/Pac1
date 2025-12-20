@@ -31,7 +31,10 @@ data "aws_iam_policy_document" "ecs_execution_secrets" {
       "secretsmanager:GetSecretValue",
       "kms:Decrypt"
     ]
-    resources = [aws_secretsmanager_secret.app_secrets.arn]
+    resources = [
+      aws_secretsmanager_secret.app_secrets.arn,
+      aws_kms_key.secrets.arn
+    ]
   }
 }
 
@@ -39,6 +42,39 @@ resource "aws_iam_role_policy" "ecs_execution_secrets" {
   name   = "${var.project_name}-${var.environment}-secrets-execution-policy"
   role   = aws_iam_role.ecs_task_execution.id
   policy = data.aws_iam_policy_document.ecs_execution_secrets.json
+}
+
+############################################
+# ECS EXECUTION LOGS POLICY
+############################################
+data "aws_iam_policy_document" "ecs_execution_logs" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = [
+      "${aws_cloudwatch_log_group.ecs.arn}:*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey"
+    ]
+    resources = [
+      aws_kms_key.cloudwatch.arn
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "ecs_execution_logs" {
+  name   = "${var.project_name}-${var.environment}-execution-logs-policy"
+  role   = aws_iam_role.ecs_task_execution.id
+  policy = data.aws_iam_policy_document.ecs_execution_logs.json
 }
 
 ############################################
@@ -60,9 +96,20 @@ data "aws_iam_policy_document" "ecs_task_logs" {
       "logs:PutLogEvents"
     ]
 
-    # tfsec-compliant: only attach to a specific log group and its streams
+    # FIXED: Correct ARN format for log streams
     resources = [
-      "${aws_cloudwatch_log_group.ecs.arn}/ecs" # exact log group stream prefix
+      "${aws_cloudwatch_log_group.ecs.arn}:log-stream:*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey"
+    ]
+    resources = [
+      aws_kms_key.cloudwatch.arn
     ]
   }
 }
@@ -72,4 +119,3 @@ resource "aws_iam_role_policy" "ecs_task_logs" {
   role   = aws_iam_role.ecs_task.id
   policy = data.aws_iam_policy_document.ecs_task_logs.json
 }
-
