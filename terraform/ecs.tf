@@ -1,18 +1,8 @@
 ############################################
-# DATA
+# DATA SOURCES
 ############################################
 
 data "aws_caller_identity" "current" {}
-
-data "aws_iam_policy_document" "ecs_task_assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
-}
 
 ############################################
 # KMS – CLOUDWATCH LOGS
@@ -46,10 +36,17 @@ data "aws_iam_policy_document" "cloudwatch_kms_policy" {
       "kms:Decrypt",
       "kms:ReEncrypt*",
       "kms:GenerateDataKey*",
+      "kms:CreateGrant",
       "kms:DescribeKey"
     ]
 
     resources = ["*"]
+
+    condition {
+      test     = "ArnLike"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values   = ["arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"]
+    }
   }
 }
 
@@ -58,6 +55,15 @@ resource "aws_kms_key" "cloudwatch" {
   deletion_window_in_days = 7
   enable_key_rotation     = true
   policy                  = data.aws_iam_policy_document.cloudwatch_kms_policy.json
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-cloudwatch-kms"
+  }
+}
+
+resource "aws_kms_alias" "cloudwatch" {
+  name          = "alias/${var.project_name}-${var.environment}-cloudwatch"
+  target_key_id = aws_kms_key.cloudwatch.key_id
 }
 
 ############################################
@@ -72,48 +78,6 @@ resource "aws_cloudwatch_log_group" "ecs" {
   tags = {
     Name = "${var.project_name}-${var.environment}-ecs-logs"
   }
-}
-
-############################################
-# IAM – EXECUTION ROLE
-############################################
-
-resource "aws_iam_role" "ecs_task_execution" {
-  name               = "${var.project_name}-${var.environment}-ecs-task-execution-role"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role.json
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
-  role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-############################################
-# IAM – TASK ROLE
-############################################
-
-resource "aws_iam_role" "ecs_task" {
-  name               = "${var.project_name}-${var.environment}-ecs-task-role"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role.json
-}
-
-data "aws_iam_policy_document" "ecs_task_logs" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-    resources = [
-      "${aws_cloudwatch_log_group.ecs.arn}:log-stream:*"
-    ]
-  }
-}
-
-resource "aws_iam_role_policy" "ecs_task_logs" {
-  name   = "${var.project_name}-${var.environment}-task-logs-policy"
-  role   = aws_iam_role.ecs_task.id
-  policy = data.aws_iam_policy_document.ecs_task_logs.json
 }
 
 ############################################
@@ -188,7 +152,11 @@ resource "aws_ecs_task_definition" "main" {
     }
   ])
 
-  depends_on = [aws_cloudwatch_log_group.ecs]
+  depends_on = [
+    aws_cloudwatch_log_group.ecs,
+    aws_iam_role_policy.ecs_execution_secrets,
+    aws_iam_role_policy.ecs_execution_logs
+  ]
 
   tags = {
     Name = "${var.project_name}-${var.environment}-task"
@@ -225,10 +193,12 @@ resource "aws_ecs_service" "main" {
     ignore_changes = [task_definition]
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = [
+    aws_lb_listener.http,
+    aws_iam_role_policy.ecs_task_logs
+  ]
 
   tags = {
     Name = "${var.project_name}-${var.environment}-service"
   }
 }
-
