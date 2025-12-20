@@ -6,10 +6,10 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  # These link directly to the outputs in your 'output tf' file
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
   ECS_SERVICE: ${{ secrets.ECS_SERVICE_NAME }}
   ECS_CLUSTER: ${{ secrets.ECS_CLUSTER_NAME }}
+  PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
 
 jobs:
   deploy:
@@ -21,11 +21,11 @@ jobs:
         uses: actions/checkout@v4
 
       # 1. SECURITY AUDIT (Premium Feature)
-      # This ensures the customer doesn't accidentally weaken your new ChatGPT files
       - name: Terraform Security Scan (tfsec)
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
-          soft_fail: false 
+          working_directory: terraform
+          soft_fail: false
 
       # 2. AWS AUTHENTICATION
       - name: Configure AWS Credentials
@@ -35,43 +35,127 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3. DOCKER BUILD & PUSH
+      # 3. VERIFY PROJECT_NAME SECRET
+      - name: Verify Required Secrets
+        run: |
+          if [ -z "${{ secrets.PROJECT_NAME }}" ]; then
+            echo "❌ ERROR: PROJECT_NAME secret is not set!"
+            echo "Go to: Settings → Secrets → Actions → New repository secret"
+            echo "Name: PROJECT_NAME"
+            echo "Value: Your project name (same as used in terraform apply)"
+            exit 1
+          fi
+          echo "✅ PROJECT_NAME is set: ${{ secrets.PROJECT_NAME }}"
+
+      # 4. DOCKER BUILD & PUSH
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag, and Push
+      - name: Build, Tag, and Push Docker Image
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          echo "Building Docker image..."
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          
+          echo "Pushing Docker image..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "✅ Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      # 4. TERRAFORM DEPLOYMENT
+      # 5. TERRAFORM DEPLOYMENT
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          terraform_version: ~1.5.0
 
       - name: Terraform Init
+        working-directory: terraform
         run: terraform init
 
-      # Passing the project_name is CRITICAL for your new iam.tf to work
-      - name: Terraform Apply
-        run: |
-          terraform apply -auto-approve \
-            -var="container_image=${{ steps.build-image.outputs.image }}" \
-            -var="project_name=${{ secrets.PROJECT_NAME }}"
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
 
-      # 5. ECS REFRESH
-      - name: Force Deployment
+      - name: Terraform Plan
+        working-directory: terraform
         run: |
+          terraform plan \
+            -var="container_image=${{ steps.build-image.outputs.image }}" \
+            -var="project_name=${{ secrets.PROJECT_NAME }}" \
+            -out=tfplan
+
+      # CRITICAL: Passing project_name is REQUIRED for IAM security policies
+      - name: Terraform Apply
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve tfplan
+
+      # 6. ECS FORCE NEW DEPLOYMENT
+      - name: Force ECS Service Update
+        run: |
+          echo "Forcing new ECS deployment..."
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE }} \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Deployment triggered successfully"
+
+      # 7. DEPLOYMENT STATUS
+      - name: Wait for Service Stability
+        run: |
+          echo "Waiting for service to become stable (this may take 2-5 minutes)..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Service is stable and running"
+
+      # 8. OUTPUT DEPLOYMENT INFO
+      - name: Get Deployment Info
+        run: |
+          echo "=================================================="
+          echo "🚀 DEPLOYMENT SUCCESSFUL"
+          echo "=================================================="
+          echo "Image: ${{ steps.build-image.outputs.image }}"
+          echo "Cluster: ${{ env.ECS_CLUSTER }}"
+          echo "Service: ${{ env.ECS_SERVICE }}"
+          echo "Region: ${{ env.AWS_REGION }}"
+          echo "=================================================="
+          
+          # Get the load balancer URL
+          ALB_ARN=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].loadBalancers[0].targetGroupArn' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ ! -z "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+            LB_ARN=$(aws elbv2 describe-target-groups \
+              --target-group-arns $ALB_ARN \
+              --query 'TargetGroups[0].LoadBalancerArns[0]' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
             
+            if [ ! -z "$LB_ARN" ] && [ "$LB_ARN" != "None" ]; then
+              ALB_DNS=$(aws elbv2 describe-load-balancers \
+                --load-balancer-arns $LB_ARN \
+                --query 'LoadBalancers[0].DNSName' \
+                --output text \
+                --region ${{ env.AWS_REGION }})
+              
+              echo "🌐 Application URL: http://$ALB_DNS"
+            fi
+          fi
+          
+          echo "=================================================="
