@@ -163,8 +163,11 @@ terraform init -migrate-state
 ### Step 4: Deploy infrastructure
 
 ```bash
-terraform plan
-terraform apply
+# 1. Initialize the backend
+   terraform init
+
+   # 2. Deploy with your unique project name (Required for scoped IAM security)
+   terraform apply -var="project_name=yourname"
 ```
 
 Type `yes`. Grab coffee. Takes 8-12 minutes.
