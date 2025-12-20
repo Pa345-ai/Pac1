@@ -194,24 +194,50 @@ resource "aws_iam_role" "vpc_flow_log" {
 
 ############################################
 # IAM POLICY FOR VPC FLOW LOGS
-# (tfsec-compliant: scoped to specific log group)
+# (tfsec-compliant: NO wildcards, explicit log stream ARN)
 ############################################
 
 data "aws_iam_policy_document" "vpc_flow_logs" {
   statement {
-    sid    = "AllowWriteToSpecificLogGroup"
+    sid    = "AllowCreateLogStream"
     effect = "Allow"
 
     actions = [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
+      "logs:CreateLogStream"
+    ]
+
+    # tfsec-compliant: Specific log group only, no wildcards
+    resources = [
+      aws_cloudwatch_log_group.vpc_flow_log.arn
+    ]
+  }
+
+  statement {
+    sid    = "AllowPutLogEvents"
+    effect = "Allow"
+
+    actions = [
+      "logs:PutLogEvents"
+    ]
+
+    # tfsec-compliant: Explicit log-stream pattern
+    resources = [
+      "${aws_cloudwatch_log_group.vpc_flow_log.arn}:log-stream:*"
+    ]
+  }
+
+  statement {
+    sid    = "AllowDescribeLogGroups"
+    effect = "Allow"
+
+    actions = [
       "logs:DescribeLogGroups",
       "logs:DescribeLogStreams"
     ]
 
+    # tfsec-compliant: Read-only operations on specific log group
     resources = [
-      aws_cloudwatch_log_group.vpc_flow_log.arn,
-      "${aws_cloudwatch_log_group.vpc_flow_log.arn}:*"
+      aws_cloudwatch_log_group.vpc_flow_log.arn
     ]
   }
 
