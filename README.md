@@ -41,27 +41,18 @@ This is a **lean, production-ready stack**. No enterprise bloat. No compliance t
 ┌─────────────────────────────────────────────────────────────┐
 │                         INTERNET                             │
 └──────────────────────────┬──────────────────────────────────┘
-                           │
                            ▼
-                ┌──────────────────────┐
-                │  Application Load    │  ← HTTP traffic from users
-                │     Balancer         │
-                └──────────┬───────────┘
+             [ Hardened Load Balancer (Public) ]
                            │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-        ▼                  ▼                  ▼
-   ┌─────────┐        ┌─────────┐      ┌─────────┐
-   │   ECS   │        │   ECS   │      │   ECS   │  ← Your app
-   │  Task   │        │  Task   │      │  Task   │     (Fargate)
-   └─────────┘        └─────────┘      └─────────┘
-        │                  │                  │
-        └──────────────────┼──────────────────┘
-                           │
+             ┌─────────────┴─────────────┐
+             ▼                           ▼
+      [ ECS Service ]             [ ECS Service ]
+      (Private Subnet)            (Private Subnet)
+             │                           │
+             └─────────────┬─────────────┘
                            ▼
-                   ┌───────────────┐
-                   │ NAT Gateway   │  ← Outbound internet
-                   └───────────────┘       (APIs, etc.)
+           [ KMS & AWS Secrets Manager (Encrypted) ]
+
 ```
 
 **What you get:**
