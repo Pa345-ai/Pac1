@@ -1,0 +1,14 @@
+┌─────────────────────────────────────────────────────────────┐
+│                         INTERNET                             │
+└──────────────────────────┬──────────────────────────────────┘
+                           ▼
+             [ Hardened Load Balancer (Public) ]
+                           │
+             ┌─────────────┴─────────────┐
+             ▼                           ▼
+      [ ECS Service ]             [ ECS Service ]
+      (Private Subnet)            (Private Subnet)
+             │                           │
+             └─────────────┬─────────────┘
+                           ▼
+           [ KMS & AWS Secrets Manager (Encrypted) ]
