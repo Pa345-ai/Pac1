@@ -135,33 +135,46 @@ resource "aws_iam_role" "vpc_flow_log" {
   })
 }
 
-# 4. Scoped IAM Policy (Fixed for tfsec wildcard check)
-resource "aws_iam_role_policy" "vpc_flow_log" {
-  name = "${var.project_name}-vpc-flow-log-policy"
-  role = aws_iam_role.vpc_flow_log.id
+############################################
+# IAM POLICY DOCUMENT – VPC FLOW LOGS
+# tfsec-clean (NO wildcards)
+############################################
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams"
-        ]
-        Effect   = "Allow"
-        # We target the log group specifically. 
-        # tfsec sometimes requires the exact ARN without the suffix for certain checks.
-        Resource = "${aws_cloudwatch_log_group.vpc_flow_log.arn}:*"
-      },
-      {
-        Action = [
-          "logs:CreateLogGroup"
-        ]
-        Effect   = "Allow"
-        Resource = "*" # This is required for the service, but we ignore the check here
-      }
+data "aws_iam_policy_document" "vpc_flow_logs" {
+  statement {
+    sid    = "AllowWriteToSpecificLogGroup"
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
     ]
-  })
+
+    # IMPORTANT:
+    # tfsec allows this because the resource is the LOG GROUP ARN itself
+    # Terraform pre-creates the log group, so CreateLogGroup is NOT needed
+    resources = [
+      aws_cloudwatch_log_group.vpc_flow_log.arn
+    ]
+  }
+
+  statement {
+    sid    = "AllowDescribeOnly"
+    effect = "Allow"
+
+    actions = [
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams"
+    ]
+
+    resources = [
+      aws_cloudwatch_log_group.vpc_flow_log.arn
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "vpc_flow_log" {
+  name   = "${var.project_name}-vpc-flow-log-policy"
+  role  = aws_iam_role.vpc_flow_log.id
+  policy = data.aws_iam_policy_document.vpc_flow_logs.json
 }
