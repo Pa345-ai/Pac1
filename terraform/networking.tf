@@ -110,7 +110,8 @@ resource "aws_route_table_association" "private" {
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
   name              = "/aws/vpc-flow-logs/${var.project_name}"
   retention_in_days = 30
-  kms_key_id        = aws_kms_key.logs.arn # Links to your existing KMS key
+  kms_key_id = aws_kms_key.cloudwatch.arn
+
 }
 
 # 2. Enable the Flow Log
