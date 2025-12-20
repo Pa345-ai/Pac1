@@ -606,5 +606,6 @@ After you deploy, immediately do these three things:
 1. **Set up billing alerts** in AWS Console (set at $100/month)
 2. **Update the placeholder secrets** in Secrets Manager
 3. **Add your domain and HTTPS certificate** before going live
+4. **Add PROJECT_NAME to GitHub Secrets:** Go to your Repo -> Settings -> Secrets and Variables -> Actions. Add a secret named `PROJECT_NAME` using the same name you used in the setup script. This is required for your high-security IAM policies to sync.
 
 Then get back to building your product.
