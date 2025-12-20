@@ -102,13 +102,18 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private.id
 }
 
-# 1. Create the Log Group for network traffic
+# ==============================================================================
+# VPC FLOW LOGS (Hardened: No Wildcards + KMS Encryption)
+# ==============================================================================
+
+# 1. Create the Log Group with KMS Encryption (Fixes LOW Result #2)
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
   name              = "/aws/vpc-flow-logs/${var.project_name}"
   retention_in_days = 30
+  kms_key_id        = aws_kms_key.logs.arn # Links to your existing KMS key
 }
 
-# 2. Enable the Flow Log on your VPC
+# 2. Enable the Flow Log
 resource "aws_flow_log" "main" {
   iam_role_arn    = aws_iam_role.vpc_flow_log.arn
   log_destination = aws_cloudwatch_log_group.vpc_flow_log.arn
@@ -116,7 +121,7 @@ resource "aws_flow_log" "main" {
   vpc_id          = aws_vpc.main.id
 }
 
-# 3. IAM Role to allow VPC to write logs to CloudWatch
+# 3. IAM Role for Flow Logs
 resource "aws_iam_role" "vpc_flow_log" {
   name = "${var.project_name}-vpc-flow-log-role"
 
@@ -130,6 +135,7 @@ resource "aws_iam_role" "vpc_flow_log" {
   })
 }
 
+# 4. Scoped IAM Policy (Fixes HIGH Result #1 by removing "*")
 resource "aws_iam_role_policy" "vpc_flow_log" {
   name = "${var.project_name}-vpc-flow-log-policy"
   role = aws_iam_role.vpc_flow_log.id
@@ -138,14 +144,15 @@ resource "aws_iam_role_policy" "vpc_flow_log" {
     Version = "2012-10-17"
     Statement = [{
       Action = [
-        "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents",
         "logs:DescribeLogGroups",
         "logs:DescribeLogStreams"
       ]
       Effect   = "Allow"
-      Resource = "*"
+      # Specify the exact Log Group ARN instead of "*"
+      Resource = "${aws_cloudwatch_log_group.vpc_flow_log.arn}:*"
     }]
   })
 }
+
