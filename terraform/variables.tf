@@ -15,6 +15,12 @@ variable "environment" {
   default     = "production"
 }
 
+variable "vpc_cidr" {
+  description = "CIDR block for VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
 variable "container_image" {
   description = "Docker image URL from ECR"
   type        = string
