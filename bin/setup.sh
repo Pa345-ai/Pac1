@@ -27,10 +27,10 @@ aws ecr create-repository --repository-name "${PROJECT_NAME}-production" --regio
 echo "✅ ECR Repository Created."
 
 # 4. Update backend.tf automatically
-if [ -f "Backend.tf" ]; then
+if [ -f "backend.tf" ]; then
     sed -i '' "s/YOUR-PROJECT-terraform-state/$BUCKET_NAME/g" Backend.tf 2>/dev/null || \
     sed -i "s/YOUR-PROJECT-terraform-state/$BUCKET_NAME/g" Backend.tf
-    echo "✅ Backend.tf updated with bucket name."
+    echo "✅ backend.tf updated with bucket name."
 fi
 
 echo "-------------------------------------------------------"
