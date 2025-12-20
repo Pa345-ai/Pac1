@@ -145,7 +145,7 @@ resource "aws_route_table_association" "private" {
 }
 
 ############################################
-# VPC FLOW LOGS
+# VPC FLOW LOGS - CloudWatch Log Group
 ############################################
 
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
@@ -157,6 +157,10 @@ resource "aws_cloudwatch_log_group" "vpc_flow_log" {
     Name = "${var.project_name}-${var.environment}-vpc-flow-logs"
   }
 }
+
+############################################
+# VPC FLOW LOGS - Flow Log Resource
+############################################
 
 resource "aws_flow_log" "main" {
   iam_role_arn    = aws_iam_role.vpc_flow_log.arn
@@ -194,10 +198,11 @@ resource "aws_iam_role" "vpc_flow_log" {
 
 ############################################
 # IAM POLICY FOR VPC FLOW LOGS
-# (tfsec-compliant: NO wildcards, explicit log stream ARN)
+# Note: Wildcards are required for VPC Flow Logs
 ############################################
-
+# tfsec:ignore:aws-iam-no-policy-wildcards
 data "aws_iam_policy_document" "vpc_flow_logs" {
+  # Statement 1: Allow creating log streams in the specific log group
   statement {
     sid    = "AllowCreateLogStream"
     effect = "Allow"
@@ -206,12 +211,15 @@ data "aws_iam_policy_document" "vpc_flow_logs" {
       "logs:CreateLogStream"
     ]
 
-    # tfsec-compliant: Specific log group only, no wildcards
     resources = [
       aws_cloudwatch_log_group.vpc_flow_log.arn
     ]
   }
 
+  # Statement 2: Allow writing log events to any stream in this log group
+  # Wildcard required: AWS VPC Flow Logs dynamically create stream names based on ENI IDs
+  # Example stream names: eni-0a1b2c3d4e5f6g7h8, eni-9i8h7g6f5e4d3c2b1
+  # This is scoped to the specific log group ARN for security
   statement {
     sid    = "AllowPutLogEvents"
     effect = "Allow"
@@ -220,14 +228,14 @@ data "aws_iam_policy_document" "vpc_flow_logs" {
       "logs:PutLogEvents"
     ]
 
-    # tfsec-compliant: Explicit log-stream pattern
     resources = [
       "${aws_cloudwatch_log_group.vpc_flow_log.arn}:log-stream:*"
     ]
   }
 
+  # Statement 3: Allow describing log groups and streams (read-only)
   statement {
-    sid    = "AllowDescribeLogGroups"
+    sid    = "AllowDescribeLogResources"
     effect = "Allow"
 
     actions = [
@@ -235,14 +243,14 @@ data "aws_iam_policy_document" "vpc_flow_logs" {
       "logs:DescribeLogStreams"
     ]
 
-    # tfsec-compliant: Read-only operations on specific log group
     resources = [
       aws_cloudwatch_log_group.vpc_flow_log.arn
     ]
   }
 
+  # Statement 4: Allow KMS operations for encrypted CloudWatch Logs
   statement {
-    sid    = "AllowKMSDecrypt"
+    sid    = "AllowKMSOperations"
     effect = "Allow"
 
     actions = [
