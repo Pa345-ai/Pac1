@@ -165,4 +165,3 @@ resource "aws_iam_role_policy" "vpc_flow_log" {
     ]
   })
 }
-
