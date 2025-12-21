@@ -4,9 +4,6 @@ Copyright (c) 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE
 Licensed for single commercial use - See LICENSE.txt
 -->
 
-# AWS Terraform Starter Kit – The 2-Week Shortcut
-# ... rest of file
-
 # Customer Troubleshooting Guide
 
 ### 1. "Access Denied" when starting the App
