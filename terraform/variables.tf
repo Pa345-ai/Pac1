@@ -1,3 +1,9 @@
+################################################################################
+# AWS Terraform Starter Kit
+# Copyright (c) 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE
+# Licensed for single commercial use - See LICENSE.txt
+################################################################################
+
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
