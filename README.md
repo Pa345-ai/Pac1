@@ -1,3 +1,9 @@
+<!--
+AWS Terraform Starter Kit
+Copyright (c) 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE
+Licensed for single commercial use - See LICENSE.txt
+-->
+
 # AWS Terraform Starter Kit – The 2-Week Shortcut
 
 **Ship your SaaS MVP in 10 minutes, not 2 weeks.**
