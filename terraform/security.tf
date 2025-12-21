@@ -1,3 +1,9 @@
+################################################################################
+# AWS Terraform Starter Kit
+# Copyright (c) 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE
+# Licensed for single commercial use - See LICENSE.txt
+################################################################################
+
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-${var.environment}-alb-sg"
   description = "Security group for Application Load Balancer"
