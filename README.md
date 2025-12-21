@@ -41,7 +41,7 @@ This kit is designed to get startups and small enterprises launched in minutes. 
 * **Public Load Balancing:** Accessible via the internet immediately for demos and users.
 * **Open Outbound Connectivity:** Connect to any external API without manual firewall configuration.
 
-> 🔒 **Need higher security?** If you are deploying for a large enterprise or require strict compliance (SOC2/ISO27001), please follow the step-by-step instructions in [HARDENING.md](./HARDENING.md) to transition to a locked-down production environment.
+> 🔒 **Need higher security?** If you are deploying for a large enterprise or require strict compliance (SOC2/ISO27001), please follow the step-by-step instructions in [HARDENING.md](./SECURITY-HARDENING.md) to transition to a locked-down production environment.
 
 ---
 
