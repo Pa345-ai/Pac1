@@ -1,3 +1,9 @@
+################################################################################
+# AWS Terraform Starter Kit
+# Copyright (c) 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE
+# Licensed for single commercial use - See LICENSE.txt
+################################################################################
+
 terraform {
   required_version = ">= 1.5.0"
 
