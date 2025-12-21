@@ -757,3 +757,10 @@ terraform output alb_url
    - `ECS_CLUSTER_NAME`
 
 Then get back to building your product. 🚀
+
+---
+
+**Created by RUWANPURAGE PAVITHRA PARAMI RANASINGHE**
+**Copyright © 2025 - All Rights Reserved**
+
+For licensing inquiries: [your-email@example.com]
