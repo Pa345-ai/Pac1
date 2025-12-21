@@ -32,6 +32,23 @@ During those weeks, you're not talking to customers. You're not iterating on you
 
 This starter kit gives you everything above in **10 minutes**.
 
+---
+
+## ⚡ Built for Speed & Scalability
+
+This kit is designed to get startups and small enterprises launched in minutes. By default, it prioritizes **"Fast-to-Market"** configurations to ensure your app and third-party integrations (like Stripe and OpenAI) work out of the box without complex networking hurdles.
+
+* **Public Load Balancing:** Accessible via the internet immediately for demos and users.
+* **Open Outbound Connectivity:** Connect to any external API without manual firewall configuration.
+
+> 🔒 **Need higher security?** If you are deploying for a large enterprise or require strict compliance (SOC2/ISO27001), please follow the step-by-step instructions in [HARDENING.md](./HARDENING.md) to transition to a locked-down production environment.
+
+---
+
+
+
+
+
 It's the infrastructure foundation that I've deployed dozens of times for clients. The same patterns. The same security practices. The same cost optimizations.
 
 You get to skip straight to the part where you're shipping features and talking to users.
