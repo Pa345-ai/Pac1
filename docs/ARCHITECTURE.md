@@ -5,8 +5,6 @@ Licensed for single commercial use - See LICENSE.txt
 -->
 
 # AWS Terraform Starter Kit – The 2-Week Shortcut
-# ... rest of file
-
 # Architecture Overview
 
 ## The Security Layers
