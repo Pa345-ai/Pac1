@@ -1,3 +1,9 @@
+################################################################################
+# AWS Terraform Starter Kit
+# Copyright (c) 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE
+# Licensed for single commercial use - See LICENSE.txt
+################################################################################
+
 output "vpc_id" {
   description = "ID of the VPC"
   value       = aws_vpc.main.id
