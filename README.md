@@ -5,7 +5,7 @@ Licensed for single commercial use - See LICENSE.txt
 -->
 
 # AWS Terraform Starter Kit – The 2-Week Shortcut
-
+**Version 1.0.0** | Released December 2025
 **Ship your SaaS MVP in 10 minutes, not 2 weeks.**
 
 Built for solo founders and small teams who need production-ready AWS infrastructure without the DevOps rabbit hole.
