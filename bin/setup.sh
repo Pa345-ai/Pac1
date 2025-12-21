@@ -1,4 +1,9 @@
 #!/bin/bash
+################################################################################
+# AWS Terraform Starter Kit - Setup Script
+# Copyright (c) 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE
+# Licensed for single commercial use - See LICENSE.txt
+################################################################################
 set -e
 
 # CUSTOMIZE THESE
