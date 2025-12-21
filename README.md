@@ -766,7 +766,17 @@ Then get back to building your product. 🚀
 
 ---
 
-**Created by RUWANPURAGE PAVITHRA PARAMI RANASINGHE**
-**Copyright © 2025 - All Rights Reserved**
+
+---
+
+## 📧 Support & Licensing
+
+**Created by:** RUWANPURAGE PAVITHRA PARAMI RANASINGHE  
+**License:** Single Commercial Use (see LICENSE.txt)  
+**Contact:** parameeranasinghe33@gmail.com  
+**Documentation:** See `/docs` folder for architecture and troubleshooting guides
+
+© 2025 RUWANPURAGE PAVITHRA PARAMI RANASINGHE. All Rights Reserved.
+```
 
 For licensing inquiries: [parameeranasinghe33@gmail.com.com]
