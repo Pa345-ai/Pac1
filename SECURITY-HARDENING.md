@@ -74,3 +74,5 @@ The `backend.tf` file is currently commented out.
 
 > **Note:** This architecture follows the AWS Well-Architected Framework. While the "Startup" defaults are safe for general use, hardening is a continuous process as your enterprise scales.
 
+
+ This hardening guide was prepared by the project maintainers to assist in meeting compliance requirements (SOC2/ISO27001).
